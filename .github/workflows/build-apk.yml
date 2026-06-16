@@ -62,3 +62,19 @@ jobs:
         files: android/app/build/outputs/apk/release/app-release.apk
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build Release APK
+      run: |
+        cd android
+        ./gradlew assembleRelease
+
+    - name: List APK outputs          # ← เพิ่ม step นี้
+      run: |
+        echo "=== Checking for APK files ==="
+        find android/app/build/outputs -type f -name "*.apk" 2>/dev/null || echo "No APK found"
+        echo ""
+        echo "=== Contents of release folder ==="
+        ls -la android/app/build/outputs/apk/release/ || echo "Directory not found"
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
