@@ -1,0 +1,13 @@
+{
+  "appId": "com.airsoft.dashboard",
+  "appName": "Airsoft Dashboard",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "allowMixedContent": true,
+    "backgroundColor": "#f2f3f5"
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}

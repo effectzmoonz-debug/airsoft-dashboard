@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Airsoft Dashboard">
+<meta name="theme-color" content="#ffffff">
+<title>Airsoft Dashboard</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+:root {
+  --blue: #3b7dd8;
+  --blue-light: #eef4fd;
+  --blue-mid: #dbeafe;
+  --green: #22a96b;
+  --green-light: #d1fae5;
+  --orange: #d97706;
+  --orange-light: #fef3c7;
+  --red: #e24b4a;
+  --red-light: #fde8e8;
+  --bg: #f2f3f5;
+  --surface: #ffffff;
+  --border: rgba(0,0,0,0.1);
+  --text: #111827;
+  --text2: #6b7280;
+  --text3: #9ca3af;
+  --radius: 14px;
+  --radius-sm: 10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
+body{position:fixed;top:0;left:0;right:0;bottom:0;}
+
+/* App shell */
+#app{position:absolute;inset:0;overflow:hidden;}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--bg);transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);overflow:hidden;z-index:10;}
+.screen.active{transform:translateX(0);z-index:20;}
+.screen.prev{transform:translateX(-30%);z-index:10;}
+
+/* Scrollable body */
+.scroll-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
+
+/* Top bars */
+.topbar{background:var(--surface);padding:env(safe-area-inset-top,0) 0 0;border-bottom:0.5px solid var(--border);flex-shrink:0;}
+.topbar-inner{display:flex;align-items:center;padding:14px 16px 12px;gap:10px;}
+.back-btn{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;color:var(--text);font-size:22px;flex-shrink:0;border-radius:50%;}
+.back-btn:active{background:var(--bg);}
+.topbar-title{flex:1;text-align:center;font-size:17px;font-weight:600;color:var(--text);}
+.topbar-actions{display:flex;gap:6px;}
+.icon-btn{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;font-size:20px;border-radius:50%;}
+.icon-btn:active{background:var(--bg);}
+.icon-btn.edit{color:var(--blue);}
+.icon-btn.del{color:var(--red);}
+
+/* Dashboard header */
+.dash-header{background:var(--surface);padding:20px 20px 16px;border-bottom:0.5px solid var(--border);}
+.dash-title{font-size:28px;font-weight:700;color:var(--text);}
+.dash-sub{font-size:14px;color:var(--text2);margin-top:3px;}
+
+/* Search */
+.search-wrap{padding:14px 16px 0;}
+.search-box{display:flex;align-items:center;gap:10px;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:12px 16px;}
+.search-box i{color:var(--text3);font-size:18px;flex-shrink:0;}
+.search-box input{border:none;background:none;flex:1;font-size:15px;color:var(--text);outline:none;min-width:0;}
+.search-box input::placeholder{color:var(--text3);}
+
+/* Player list */
+.list-wrap{padding:12px 16px;}
+.date-group{margin-bottom:4px;}
+.date-header{display:flex;align-items:center;justify-content:space-between;background:var(--blue-light);border-left:3px solid var(--blue);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:10px 14px;margin-bottom:8px;}
+.date-label{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--blue);}
+.date-badge{background:var(--blue);color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;}
+.player-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background .15s;}
+.player-card:active{background:#f9fafb;}
+.player-num{font-size:12px;font-weight:700;color:var(--blue);margin-bottom:2px;}
+.player-name{font-size:16px;font-weight:600;color:var(--text);}
+.player-phone{font-size:13px;color:var(--text2);margin-top:1px;}
+.score-badge{text-align:right;flex-shrink:0;}
+.score-num{font-size:24px;font-weight:700;line-height:1;}
+.score-lbl{font-size:11px;color:var(--text3);margin-top:2px;}
+.c-green{color:var(--green);}
+.c-orange{color:var(--orange);}
+.c-red{color:var(--red);}
+
+/* Empty state */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:70px 30px;gap:14px;text-align:center;}
+.empty-state .empty-icon{font-size:52px;color:var(--text3);}
+.empty-state h3{font-size:18px;font-weight:600;color:var(--text);}
+.empty-state p{font-size:14px;color:var(--text2);line-height:1.5;}
+
+/* FAB */
+.fab{position:absolute;bottom:calc(28px + env(safe-area-inset-bottom,0));right:20px;width:58px;height:58px;border-radius:50%;background:var(--blue);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:30px;box-shadow:0 4px 20px rgba(59,125,216,.4);transition:transform .15s;}
+.fab:active{transform:scale(.93);}
+
+/* Form screens */
+.hero-icon{display:flex;justify-content:center;padding:28px 0 20px;}
+.hero-circle{width:84px;height:84px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:36px;}
+.hero-blue{background:var(--blue-mid);color:var(--blue);}
+.hero-red{background:var(--red-light);color:var(--red);}
+
+.stat-card{background:var(--blue-light);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:14px;margin:0 16px 4px;}
+.stat-icon{width:46px;height:46px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--blue);flex-shrink:0;}
+.stat-val{font-size:28px;font-weight:700;color:var(--blue);}
+.stat-lbl{font-size:13px;color:var(--blue);opacity:.8;}
+
+.form-pad{padding:0 16px;}
+.field-label{font-size:15px;font-weight:600;color:var(--text);margin:18px 0 8px;}
+.field-input{display:flex;align-items:center;gap:10px;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:13px 16px;}
+.field-input i{color:var(--text3);font-size:19px;flex-shrink:0;}
+.field-input input{border:none;background:none;flex:1;font-size:16px;color:var(--text);outline:none;min-width:0;}
+.field-input input::placeholder{color:var(--text3);}
+
+.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.type-btn{padding:12px 8px;border:0.5px solid var(--border);background:var(--surface);border-radius:var(--radius-sm);font-size:15px;font-weight:500;cursor:pointer;color:var(--text);transition:all .15s;}
+.type-btn:active{background:var(--bg);}
+.type-btn.sel{border-color:var(--blue);background:var(--blue-light);color:var(--blue);}
+
+.weight-row{display:flex;gap:8px;}
+.weight-btn{flex:1;padding:12px 6px;border:0.5px solid var(--border);background:var(--surface);border-radius:var(--radius-sm);font-size:14px;font-weight:500;cursor:pointer;color:var(--text);}
+.weight-btn:active{background:var(--bg);}
+.weight-btn.sel{border-color:var(--blue);background:var(--blue-light);color:var(--blue);}
+
+.result-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.result-btn{padding:14px 4px;border:2px solid;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;background:transparent;display:flex;flex-direction:column;align-items:center;gap:5px;}
+.result-btn i{font-size:22px;}
+.result-btn.green{border-color:var(--green);color:var(--green);}
+.result-btn.yellow{border-color:var(--orange);color:var(--orange);}
+.result-btn.red-r{border-color:var(--red);color:var(--red);}
+.result-btn.sel.green{background:var(--green-light);}
+.result-btn.sel.yellow{background:var(--orange-light);}
+.result-btn.sel.red-r{background:var(--red-light);}
+
+.info-banner{display:flex;align-items:flex-start;gap:10px;border-radius:var(--radius-sm);padding:12px 14px;margin:18px 0 8px;}
+.info-banner.blue{background:var(--blue-light);}
+.info-banner.blue i{color:var(--blue);font-size:18px;flex-shrink:0;margin-top:1px;}
+.info-banner.blue p{font-size:13px;color:#3b7dd8;line-height:1.5;}
+.info-banner.red{background:var(--red-light);}
+.info-banner.red i{color:var(--red);font-size:18px;flex-shrink:0;margin-top:1px;}
+.info-banner.red p{font-size:13px;color:#c0392b;line-height:1.5;}
+
+/* Bottom buttons */
+.btn-row{display:flex;gap:10px;padding:12px 16px calc(16px + env(safe-area-inset-bottom,0));background:var(--bg);border-top:0.5px solid var(--border);flex-shrink:0;}
+.btn-cancel{flex:1;padding:15px;border:0.5px solid var(--border);background:var(--surface);border-radius:var(--radius);font-size:16px;cursor:pointer;color:var(--text2);font-weight:500;}
+.btn-cancel:active{background:var(--bg);}
+.btn-primary{flex:2;padding:15px;background:var(--blue);color:#fff;border:none;border-radius:var(--radius);font-size:16px;font-weight:700;cursor:pointer;transition:opacity .15s;}
+.btn-primary:active{opacity:.85;}
+.btn-danger{background:var(--red);}
+
+/* Player detail */
+.detail-top{padding:20px 16px 16px;display:flex;align-items:center;justify-content:space-between;}
+.avatar{width:74px;height:74px;border-radius:50%;background:var(--blue-mid);display:flex;align-items:center;justify-content:center;font-size:34px;color:var(--blue);flex-shrink:0;}
+.score-box{background:#f3f4f6;border-radius:var(--radius);padding:13px 22px;text-align:center;}
+.score-box-num{font-size:34px;font-weight:700;line-height:1;}
+.score-box-lbl{font-size:12px;color:var(--text2);margin-top:3px;}
+.detail-name{font-size:24px;font-weight:700;color:var(--text);padding:0 16px 3px;}
+.detail-reg{font-size:14px;font-weight:600;color:var(--blue);padding:0 16px 10px;}
+.detail-info-row{display:flex;align-items:center;gap:10px;padding:0 16px;margin-bottom:7px;font-size:14px;color:var(--text2);}
+.detail-info-row i{font-size:17px;color:var(--text3);}
+
+/* Tabs */
+.tab-bar{display:flex;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
+.tab{flex:1;text-align:center;padding:13px 8px;font-size:14px;font-weight:500;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;display:flex;align-items:center;justify-content:center;gap:6px;transition:color .2s;}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:600;}
+.tab-body{padding:12px 16px 80px;}
+
+/* Gun test cards */
+.gun-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;}
+.gun-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.gun-id{font-size:15px;font-weight:700;color:var(--text);}
+.gun-actions{display:flex;align-items:center;gap:6px;}
+.status-pill{display:flex;align-items:center;gap:5px;border-radius:20px;padding:5px 12px;font-size:12px;font-weight:700;}
+.status-pill.green{background:var(--green-light);color:#166534;}
+.status-pill.yellow{background:var(--orange-light);color:#92400e;}
+.status-pill.red-r{background:var(--red-light);color:#991b1b;}
+.gun-detail-row{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:5px;}
+.gun-detail-row b{color:var(--text);font-weight:600;}
+.gun-detail-row i{font-size:16px;flex-shrink:0;}
+.card-date{font-size:12px;color:var(--text3);margin-top:8px;}
+
+/* Penalty cards */
+.pen-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;}
+.pen-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.pen-id{font-size:15px;font-weight:700;color:var(--text);}
+.pen-score-badge{background:var(--red-light);color:#991b1b;border-radius:var(--radius-sm);padding:5px 12px;font-size:14px;font-weight:700;}
+.pen-offenses-label{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:5px;}
+.pen-offense-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:4px;}
+.pen-dot{width:7px;height:7px;border-radius:50%;background:var(--red);flex-shrink:0;}
+
+/* Offense form */
+.offense-list{border:0.5px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;background:var(--surface);}
+.offense-item{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:0.5px solid var(--border);}
+.offense-item:last-child{border-bottom:none;}
+.offense-dot{width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0;}
+.offense-input{border:none;background:none;flex:1;font-size:15px;color:var(--text);outline:none;}
+.offense-input::placeholder{color:var(--text3);}
+.add-offense-row{display:flex;align-items:center;justify-content:space-between;margin:14px 0 6px;}
+.add-offense-btn{width:32px;height:32px;border-radius:50%;background:var(--blue);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;}
+
+/* Toast */
+.toast{position:fixed;bottom:calc(90px + env(safe-area-inset-bottom,0));left:50%;transform:translateX(-50%) translateY(20px);background:#1f2937;color:#fff;padding:12px 20px;border-radius:30px;font-size:14px;font-weight:500;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;z-index:999;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* Divider */
+.divider{height:0.5px;background:var(--border);margin:0;}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- SCREEN 0: Dashboard -->
+<div class="screen active" id="s-dash">
+  <div class="dash-header">
+    <div class="dash-title">Airsoft Dashboard</div>
+    <div class="dash-sub" id="dash-sub">0 Players • 0 Days</div>
+  </div>
+  <div class="scroll-body">
+    <div class="search-wrap">
+      <div class="search-box">
+        <i class="ti ti-search"></i>
+        <input type="text" id="search-input" placeholder="Search by name, #, phone, or RMTest-001…" oninput="renderDash()">
+      </div>
+    </div>
+    <div class="list-wrap" id="dash-list"></div>
+  </div>
+  <button class="fab" onclick="goTo('s-register')" aria-label="Add player">
+    <i class="ti ti-plus"></i>
+  </button>
+</div>
+
+<!-- SCREEN 1: Register Player -->
+<div class="screen" id="s-register">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <button class="back-btn" onclick="goBack()"><i class="ti ti-arrow-left"></i></button>
+      <div class="topbar-title">Register New Player</div>
+      <div style="width:36px;"></div>
+    </div>
+  </div>
+  <div class="scroll-body">
+    <div class="hero-icon"><div class="hero-circle hero-blue"><i class="ti ti-user-plus"></i></div></div>
+    <div class="stat-card">
+      <div class="stat-icon"><i class="ti ti-calendar"></i></div>
+      <div>
+        <div class="stat-val" id="reg-today-count">+0</div>
+        <div class="stat-lbl">Registered Today</div>
+      </div>
+    </div>
+    <div class="form-pad">
+      <div class="field-label">Registration Number</div>
+      <div class="field-input">
+        <i class="ti ti-hash"></i>
+        <input type="text" id="reg-number" placeholder="e.g. 001, A-001, VIP-01">
+      </div>
+      <div class="field-label">Full Name</div>
+      <div class="field-input">
+        <i class="ti ti-user"></i>
+        <input type="text" id="reg-name" placeholder="Enter player name">
+      </div>
+      <div class="field-label">Phone Number</div>
+      <div class="field-input">
+        <i class="ti ti-phone"></i>
+        <input type="tel" id="reg-phone" placeholder="Enter phone number">
+      </div>
+      <div class="info-banner blue">
+        <i class="ti ti-info-circle"></i>
+        <p>Enter your preferred registration number. Starting score: 100 points.</p>
+      </div>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn-cancel" onclick="goBack()">Cancel</button>
+    <button class="btn-primary" onclick="registerPlayer()">Register Player</button>
+  </div>
+</div>
+
+<!-- SCREEN 2: Player Detail -->
+<div class="screen" id="s-detail">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <button class="back-btn" onclick="goBack()"><i class="ti ti-arrow-left"></i></button>
+      <div class="topbar-title">Player Details</div>
+      <div class="topbar-actions">
+        <button class="icon-btn edit" onclick="editPlayerName()"><i class="ti ti-edit"></i></button>
+        <button class="icon-btn del" onclick="deletePlayer()"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-body" id="detail-scroll">
+    <div class="detail-top">
+      <div class="avatar"><i class="ti ti-user"></i></div>
+      <div class="score-box">
+        <div class="score-box-num" id="d-score">100</div>
+        <div class="score-box-lbl">Score</div>
+      </div>
+    </div>
+    <div class="detail-name" id="d-name">—</div>
+    <div class="detail-reg" id="d-reg">Registration #—</div>
+    <div class="detail-info-row"><i class="ti ti-phone"></i><span id="d-phone">—</span></div>
+    <div class="detail-info-row"><i class="ti ti-calendar"></i><span id="d-date">—</span></div>
+    <div class="divider" style="margin:10px 0 0;"></div>
+    <div class="tab-bar">
+      <div class="tab active" id="tab-g" onclick="switchTab('guns')">
+        <i class="ti ti-target"></i><span id="lbl-g">Gun Tests (0)</span>
+      </div>
+      <div class="tab" id="tab-p" onclick="switchTab('pens')">
+        <i class="ti ti-alert-triangle"></i><span id="lbl-p">Penalties (0)</span>
+      </div>
+    </div>
+    <div class="tab-body" id="body-guns"></div>
+    <div class="tab-body" id="body-pens" style="display:none;"></div>
+  </div>
+  <button class="fab" onclick="addFromDetail()"><i class="ti ti-plus"></i></button>
+</div>
+
+<!-- SCREEN 3: Add Gun Test -->
+<div class="screen" id="s-gun">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <button class="back-btn" onclick="goBack()"><i class="ti ti-arrow-left"></i></button>
+      <div class="topbar-title">Add Gun Test</div>
+      <div style="width:36px;"></div>
+    </div>
+  </div>
+  <div class="scroll-body">
+    <div class="hero-icon"><div class="hero-circle hero-blue"><i class="ti ti-target"></i></div></div>
+    <div class="form-pad">
+      <div class="field-label">Airsoft Gun Used</div>
+      <div class="field-input">
+        <i class="ti ti-gun"></i>
+        <input type="text" id="gun-name" placeholder="e.g. M4A1, AK-47, Glock 17">
+      </div>
+      <div class="field-label">Gun Type</div>
+      <div class="type-grid">
+        <button class="type-btn" onclick="selType(this,'AEG')">AEG</button>
+        <button class="type-btn" onclick="selType(this,'GBB')">GBB</button>
+        <button class="type-btn" onclick="selType(this,'HPA')">HPA</button>
+        <button class="type-btn" onclick="selType(this,'Spring')">Spring</button>
+      </div>
+      <div class="field-label">BB Weight</div>
+      <div class="weight-row">
+        <button class="weight-btn" onclick="selWeight(this,'0.20')">0.20 g.</button>
+        <button class="weight-btn" onclick="selWeight(this,'0.23')">0.23 g.</button>
+        <button class="weight-btn" onclick="selWeight(this,'0.25')">0.25 g.</button>
+      </div>
+      <div class="field-label">Muzzle Velocity (FPS)</div>
+      <div class="field-input">
+        <i class="ti ti-gauge"></i>
+        <input type="number" id="gun-fps" placeholder="e.g. 350, 400">
+      </div>
+      <div class="field-label">Test Result</div>
+      <div class="result-row">
+        <button class="result-btn green" onclick="selResult(this,'GREEN')">
+          <i class="ti ti-circle-check"></i>Green
+        </button>
+        <button class="result-btn yellow" onclick="selResult(this,'YELLOW')">
+          <i class="ti ti-alert-triangle"></i>Yellow
+        </button>
+        <button class="result-btn red-r" onclick="selResult(this,'RED')">
+          <i class="ti ti-circle-x"></i>Red
+        </button>
+      </div>
+      <div class="info-banner blue">
+        <i class="ti ti-info-circle"></i>
+        <p>Test ID will be automatically generated</p>
+      </div>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn-cancel" onclick="goBack()">Cancel</button>
+    <button class="btn-primary" onclick="saveGunTest()">Add Gun Test</button>
+  </div>
+</div>
+
+<!-- SCREEN 4: Add Penalty -->
+<div class="screen" id="s-pen">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <button class="back-btn" onclick="goBack()"><i class="ti ti-arrow-left"></i></button>
+      <div class="topbar-title">Add Penalty</div>
+      <div style="width:36px;"></div>
+    </div>
+  </div>
+  <div class="scroll-body">
+    <div class="hero-icon"><div class="hero-circle hero-red"><i class="ti ti-alert-triangle"></i></div></div>
+    <div class="form-pad">
+      <div class="field-label">Score to Deduct</div>
+      <div class="field-input">
+        <i class="ti ti-minus"></i>
+        <input type="number" id="pen-score-input" placeholder="Enter score (e.g., 5, 10, 20)">
+      </div>
+      <div class="add-offense-row">
+        <span class="field-label" style="margin:0;">Offenses</span>
+        <button class="add-offense-btn" onclick="addOffense()"><i class="ti ti-plus"></i></button>
+      </div>
+      <div class="offense-list" id="offense-list">
+        <div class="offense-item">
+          <div class="offense-dot"></div>
+          <input class="offense-input" placeholder="Offense 1" type="text">
+        </div>
+      </div>
+      <div class="info-banner red">
+        <i class="ti ti-alert-circle"></i>
+        <p>Penalty ID will be auto-generated. Score will be deducted from player's total.</p>
+      </div>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn-cancel" onclick="goBack()">Cancel</button>
+    <button class="btn-primary btn-danger" onclick="savePenalty()">Add Penalty</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────
+const STORE_KEY = 'airsoft_v1';
+let players = [];
+let curId = null;
+let curTab = 'guns';
+let gunType = null, bbWeight = null, gunResult = null;
+let screenStack = ['s-dash'];
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) players = JSON.parse(raw);
+  } catch(e) { players = []; }
+}
+function save() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(players)); } catch(e) {}
+}
+load();
+
+// ── Navigation ─────────────────────────────────────────────────────────
+function goTo(id) {
+  const prev = screenStack[screenStack.length - 1];
+  document.getElementById(prev).classList.add('prev');
+  document.getElementById(id).classList.add('active');
+  screenStack.push(id);
+  const scroll = document.getElementById(id).querySelector('.scroll-body');
+  if (scroll) scroll.scrollTop = 0;
+}
+function goBack() {
+  if (screenStack.length < 2) return;
+  const cur = screenStack.pop();
+  const prev = screenStack[screenStack.length - 1];
+  document.getElementById(cur).classList.remove('active');
+  document.getElementById(prev).classList.remove('prev');
+  if (prev === 's-dash') renderDash();
+  if (prev === 's-detail') renderDetail();
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────
+function scoreColor(s) {
+  return s >= 80 ? 'c-green' : s >= 50 ? 'c-orange' : 'c-red';
+}
+function fmtDate(iso) {
+  const d = new Date(iso);
+  const today = new Date();
+  const yest = new Date(); yest.setDate(today.getDate() - 1);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  if (d.toDateString() === today.toDateString()) return { label: 'Today', date: months[d.getMonth()]+' '+d.getDate() };
+  if (d.toDateString() === yest.toDateString()) return { label: 'Yesterday', date: months[d.getMonth()]+' '+d.getDate() };
+  return { label: months[d.getMonth()]+' '+d.getDate(), date: d.getFullYear() };
+}
+function genId(prefix) {
+  return prefix + '-' + String(Math.floor(Math.random()*900)+100).padStart(3,'0');
+}
+
+// ── Dashboard ──────────────────────────────────────────────────────────
+function renderDash() {
+  const q = document.getElementById('search-input').value.trim().toLowerCase();
+  let list = q ? players.filter(p =>
+    p.name.toLowerCase().includes(q) ||
+    p.number.toLowerCase().includes(q) ||
+    (p.phone||'').includes(q)
+  ) : players;
+
+  const days = new Set(players.map(p => new Date(p.createdAt).toDateString())).size;
+  document.getElementById('dash-sub').textContent =
+    players.length + ' Player' + (players.length !== 1 ? 's' : '') + ' • ' +
+    days + ' Day' + (days !== 1 ? 's' : '');
+
+  const el = document.getElementById('dash-list');
+  if (!list.length) {
+    el.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">👥</div>
+      <h3>No players found</h3>
+      <p>Add your first player to get started</p>
+    </div>`;
+    return;
+  }
+
+  // Group by registration date
+  const groups = {};
+  list.forEach(p => {
+    const key = new Date(p.createdAt).toDateString();
+    (groups[key] = groups[key] || []).push(p);
+  });
+
+  el.innerHTML = Object.entries(groups)
+    .sort(([a],[b]) => new Date(b) - new Date(a))
+    .map(([key, pls]) => {
+      const info = fmtDate(pls[0].createdAt);
+      const label = info.label + (info.date ? ' • ' + info.date : '');
+      return `<div class="date-group">
+        <div class="date-header">
+          <div class="date-label"><i class="ti ti-calendar"></i>${label}</div>
+          <div class="date-badge">${pls.length}</div>
+        </div>
+        ${pls.map(p => `
+          <div class="player-card" onclick="openDetail(${p.id})">
+            <div>
+              <div class="player-num">#${p.number}</div>
+              <div class="player-name">${p.name}</div>
+              <div class="player-phone">${p.phone || '—'}</div>
+            </div>
+            <div class="score-badge">
+              <div class="score-num ${scoreColor(p.score)}">${p.score}</div>
+              <div class="score-lbl">Score</div>
+            </div>
+          </div>`).join('')}
+      </div>`;
+    }).join('');
+}
+
+// ── Register ───────────────────────────────────────────────────────────
+function openRegister() {
+  document.getElementById('reg-number').value = '';
+  document.getElementById('reg-name').value = '';
+  document.getElementById('reg-phone').value = '';
+  const today = new Date().toDateString();
+  const count = players.filter(p => new Date(p.createdAt).toDateString() === today).length;
+  document.getElementById('reg-today-count').textContent = '+' + count;
+  goTo('s-register');
+}
+
+function registerPlayer() {
+  const num = document.getElementById('reg-number').value.trim();
+  const name = document.getElementById('reg-name').value.trim();
+  const phone = document.getElementById('reg-phone').value.trim();
+  if (!name) { toast('Please enter a player name'); return; }
+  const id = Date.now();
+  players.push({ id, number: num || String(players.length + 1), name, phone, score: 100, gunTests: [], penalties: [], createdAt: new Date().toISOString() });
+  save(); toast('Player registered!'); goBack(); renderDash();
+}
+
+// ── Detail ─────────────────────────────────────────────────────────────
+function openDetail(id) {
+  curId = id; curTab = 'guns';
+  renderDetail();
+  goTo('s-detail');
+}
+
+function renderDetail() {
+  const p = players.find(x => x.id === curId);
+  if (!p) return;
+  const sc = document.getElementById('d-score');
+  sc.textContent = p.score;
+  sc.className = 'score-box-num ' + scoreColor(p.score);
+  document.getElementById('d-name').textContent = p.name;
+  document.getElementById('d-reg').textContent = 'Registration #' + p.number;
+  document.getElementById('d-phone').textContent = p.phone || '—';
+  document.getElementById('d-date').textContent = 'Registered: ' + new Date(p.createdAt).toLocaleDateString();
+  document.getElementById('lbl-g').textContent = 'Gun Tests (' + p.gunTests.length + ')';
+  document.getElementById('lbl-p').textContent = 'Penalties (' + p.penalties.length + ')';
+  renderGuns(p); renderPens(p);
+  applyTab(curTab);
+}
+
+function renderGuns(p) {
+  const el = document.getElementById('body-guns');
+  if (!p.gunTests.length) {
+    el.innerHTML = `<div class="empty-state" style="padding:50px 20px;">
+      <div class="empty-icon" style="font-size:40px;">🎯</div>
+      <h3 style="font-size:16px;">No gun tests recorded</h3>
+    </div>`; return;
+  }
+  el.innerHTML = p.gunTests.map(g => {
+    const pc = g.result==='GREEN'?'green':g.result==='YELLOW'?'yellow':'red-r';
+    const ic = g.result==='GREEN'?'ti-circle-check':g.result==='YELLOW'?'ti-alert-triangle':'ti-circle-x';
+    return `<div class="gun-card">
+      <div class="gun-card-top">
+        <span class="gun-id">${g.id}</span>
+        <div class="gun-actions">
+          <span class="status-pill ${pc}"><i class="ti ${ic}"></i>${g.result}</span>
+          <button class="icon-btn del" onclick="delGun('${g.id}')" style="font-size:18px;width:30px;height:30px;"><i class="ti ti-trash"></i></button>
+        </div>
+      </div>
+      <div class="gun-detail-row"><i class="ti ti-target"></i> Gun: <b>${g.gun} (${g.type})</b></div>
+      <div class="gun-detail-row"><i class="ti ti-circle-dot"></i> BB Weight: <b>${g.weight} g.</b></div>
+      <div class="gun-detail-row"><i class="ti ti-gauge"></i> Muzzle Velocity: <b>${g.fps} FPS</b></div>
+      <div class="card-date">${new Date(g.createdAt).toLocaleString()}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderPens(p) {
+  const el = document.getElementById('body-pens');
+  if (!p.penalties.length) {
+    el.innerHTML = `<div class="empty-state" style="padding:50px 20px;">
+      <div class="empty-icon" style="font-size:40px;">😊</div>
+      <h3 style="font-size:16px;">No penalties recorded</h3>
+      <p>Clean record!</p>
+    </div>`; return;
+  }
+  el.innerHTML = p.penalties.map(pen => `<div class="pen-card">
+    <div class="pen-card-top">
+      <span class="pen-id">${pen.id}</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="pen-score-badge">-${pen.score}</span>
+        <button class="icon-btn del" onclick="delPen('${pen.id}')" style="font-size:18px;width:30px;height:30px;"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>
+    <div class="pen-offenses-label">Offenses:</div>
+    ${pen.offenses.map(o=>`<div class="pen-offense-item"><div class="pen-dot"></div>${o}</div>`).join('')}
+    <div class="card-date">${new Date(pen.createdAt).toLocaleString()}</div>
+  </div>`).join('');
+}
+
+function switchTab(t) { curTab = t; applyTab(t); }
+function applyTab(t) {
+  document.getElementById('tab-g').className = 'tab' + (t==='guns'?' active':'');
+  document.getElementById('tab-p').className = 'tab' + (t==='pens'?' active':'');
+  document.getElementById('body-guns').style.display = t==='guns'?'':'none';
+  document.getElementById('body-pens').style.display = t==='pens'?'':'none';
+}
+
+function addFromDetail() {
+  if (curTab === 'guns') { resetGunForm(); goTo('s-gun'); }
+  else { resetPenForm(); goTo('s-pen'); }
+}
+
+// ── Edit / Delete player ───────────────────────────────────────────────
+function editPlayerName() {
+  const p = players.find(x => x.id === curId);
+  if (!p) return;
+  const name = prompt('Edit player name:', p.name);
+  if (name && name.trim()) { p.name = name.trim(); save(); renderDetail(); toast('Name updated'); }
+}
+function deletePlayer() {
+  const p = players.find(x => x.id === curId);
+  if (!p || !confirm('Delete player ' + p.name + '? This cannot be undone.')) return;
+  players = players.filter(x => x.id !== curId);
+  save(); toast('Player deleted'); goBack(); renderDash();
+}
+
+// ── Gun Test ───────────────────────────────────────────────────────────
+function resetGunForm() {
+  gunType = null; bbWeight = null; gunResult = null;
+  document.getElementById('gun-name').value = '';
+  document.getElementById('gun-fps').value = '';
+  document.querySelectorAll('.type-btn,.weight-btn,.result-btn').forEach(b => b.classList.remove('sel'));
+}
+function selType(btn, v) { gunType = v; document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('sel')); btn.classList.add('sel'); }
+function selWeight(btn, v) { bbWeight = v; document.querySelectorAll('.weight-btn').forEach(b=>b.classList.remove('sel')); btn.classList.add('sel'); }
+function selResult(btn, v) { gunResult = v; document.querySelectorAll('.result-btn').forEach(b=>b.classList.remove('sel')); btn.classList.add('sel'); }
+
+function saveGunTest() {
+  const gun = document.getElementById('gun-name').value.trim();
+  const fps = document.getElementById('gun-fps').value.trim();
+  if (!gun) { toast('Enter the gun name'); return; }
+  if (!gunType) { toast('Select a gun type'); return; }
+  if (!bbWeight) { toast('Select BB weight'); return; }
+  if (!fps) { toast('Enter muzzle velocity'); return; }
+  if (!gunResult) { toast('Select a test result'); return; }
+  const p = players.find(x => x.id === curId);
+  p.gunTests.push({ id: genId('RMTest'), gun, type: gunType, weight: bbWeight, fps, result: gunResult, createdAt: new Date().toISOString() });
+  save(); toast('Gun test added!'); goBack(); renderDetail();
+}
+function delGun(gid) {
+  if (!confirm('Delete this gun test?')) return;
+  const p = players.find(x => x.id === curId);
+  p.gunTests = p.gunTests.filter(g => g.id !== gid);
+  save(); renderDetail(); toast('Gun test removed');
+}
+
+// ── Penalty ────────────────────────────────────────────────────────────
+function resetPenForm() {
+  document.getElementById('pen-score-input').value = '';
+  document.getElementById('offense-list').innerHTML = `<div class="offense-item"><div class="offense-dot"></div><input class="offense-input" placeholder="Offense 1" type="text"></div>`;
+}
+function addOffense() {
+  const list = document.getElementById('offense-list');
+  const n = list.querySelectorAll('.offense-item').length + 1;
+  const div = document.createElement('div');
+  div.className = 'offense-item';
+  div.innerHTML = `<div class="offense-dot"></div><input class="offense-input" placeholder="Offense ${n}" type="text">`;
+  list.appendChild(div);
+  div.querySelector('input').focus();
+}
+function savePenalty() {
+  const sc = parseInt(document.getElementById('pen-score-input').value) || 0;
+  if (!sc || sc <= 0) { toast('Enter score to deduct'); return; }
+  const offenses = Array.from(document.querySelectorAll('.offense-input')).map(i=>i.value.trim()).filter(Boolean);
+  if (!offenses.length) { toast('Enter at least one offense'); return; }
+  const p = players.find(x => x.id === curId);
+  p.penalties.push({ id: genId('RMPen'), score: sc, offenses, createdAt: new Date().toISOString() });
+  p.score = Math.max(0, p.score - sc);
+  save(); toast('Penalty added!'); goBack(); renderDetail();
+}
+function delPen(pid) {
+  if (!confirm('Delete this penalty? Score will be restored.')) return;
+  const p = players.find(x => x.id === curId);
+  const pen = p.penalties.find(x => x.id === pid);
+  if (pen) p.score = Math.min(100, p.score + pen.score);
+  p.penalties = p.penalties.filter(x => x.id !== pid);
+  save(); renderDetail(); toast('Penalty removed, score restored');
+}
+
+// FAB on dash goes to register
+document.querySelector('#s-dash .fab').onclick = function() {
+  const today = new Date().toDateString();
+  const count = players.filter(p => new Date(p.createdAt).toDateString() === today).length;
+  document.getElementById('reg-today-count').textContent = '+' + count;
+  document.getElementById('reg-number').value = '';
+  document.getElementById('reg-name').value = '';
+  document.getElementById('reg-phone').value = '';
+  goTo('s-register');
+};
+
+// Init
+renderDash();
+</script>
+</body>
+</html>
