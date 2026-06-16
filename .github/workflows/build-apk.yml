@@ -1,10 +1,8 @@
-name: Build Android APK
+name: Build Airsoft Dashboard APK
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -12,69 +10,46 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-    - name: Install dependencies
-      run: npm install
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
-    - name: Setup Java
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
 
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v2
+      - name: Install dependencies
+        run: npm install
 
-    - name: Add Android platform
-      run: npx cap add android
+      - name: Add Android platform
+        run: npx cap add android
 
-    - name: Sync Capacitor
-      run: npx cap sync android
+      - name: Sync web assets
+        run: npx cap sync android
 
-    - name: Build APK
-      run: |
-        cd android
-        chmod +x gradlew
-        ./gradlew build
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
 
-    - name: Build Release APK
-      run: |
-        cd android
-        ./gradlew assembleRelease
+      - name: Build Debug APK
+        run: |
+          cd android
+          ./gradlew assembleDebug --stacktrace
 
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: airsoft-dashboard-apk
-        path: android/app/build/outputs/apk/release/app-release.apk
+      - name: Find APK (debug)
+        run: find android/app/build/outputs/apk -name "*.apk" | xargs ls -lh
 
-    - name: Create Release
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v2
-      with:
-        files: android/app/build/outputs/apk/release/app-release.apk
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Build Release APK
-      run: |
-        cd android
-        ./gradlew assembleRelease
-
-    - name: List APK outputs          # ← เพิ่ม step นี้
-      run: |
-        echo "=== Checking for APK files ==="
-        find android/app/build/outputs -type f -name "*.apk" 2>/dev/null || echo "No APK found"
-        echo ""
-        echo "=== Contents of release folder ==="
-        ls -la android/app/build/outputs/apk/release/ || echo "Directory not found"
-
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: airsoft-dashboard-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
